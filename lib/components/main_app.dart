@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:localstorage/localstorage.dart';
 
 import 'package:todo_app/components/base_text_field.dart';
 import 'package:todo_app/components/to_do_item.dart';
@@ -16,11 +17,19 @@ class MainBodyApp extends StatefulWidget {
 class _MainBodyAppState extends State<MainBodyApp>
     with SingleTickerProviderStateMixin {
   late TabController tabControler;
+  List<ToDoModel> listItem = [];
+  final LocalStorage storage = LocalStorage('todo_app');
+  final TextEditingController searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     tabControler = TabController(vsync: this, length: 3);
+    getData();
+  }
+
+  _saveToStorage() {
+    storage.setItem('todos', ToDoModel.toJSONEncodableList(listItem));
   }
 
   @override
@@ -29,7 +38,7 @@ class _MainBodyAppState extends State<MainBodyApp>
       length: tabs.length,
       child: Scaffold(
         appBar: appBarApp(),
-        floatingActionButton: floatingButton(),
+        floatingActionButton: floatingButton(context),
         body: TabBarView(
           children: tabs.map((Tab tab) {
             return Column(
@@ -38,7 +47,7 @@ class _MainBodyAppState extends State<MainBodyApp>
                 const SizedBox(
                   height: 10,
                 ),
-                ...tabPage([model])
+                ...tabPage(filterList(listItem, tab))
               ],
             );
           }).toList(),
@@ -52,8 +61,17 @@ class _MainBodyAppState extends State<MainBodyApp>
         .map((e) => Column(
               children: [
                 ToDoItem(
-                  mainModel: model,
-                ),
+                    mainModel: e,
+                    onDeleteData: (value) {
+                      listItem.remove(value);
+                      _saveToStorage();
+                      getData();
+                    },
+                    onSaveData: (value) {
+                      listItem[listItem.indexOf(e)] = value;
+                      _saveToStorage();
+                      getData();
+                    }),
                 const SizedBox(
                   height: 5,
                 ),
@@ -66,9 +84,24 @@ class _MainBodyAppState extends State<MainBodyApp>
         .toList();
   }
 
-  FloatingActionButton floatingButton() {
+  FloatingActionButton floatingButton(context) {
     return FloatingActionButton(
-        onPressed: handleAddEvent, child: const Icon(Icons.add));
+        onPressed: () {
+          hanldeClickItem(
+              context,
+              ToDoModel(
+                  id: listItem.length,
+                  title: '',
+                  content: '',
+                  typeColor: 1,
+                  time: DateTime.now()),
+              isSave: true, onSaveData: (data) {
+            listItem.add(data);
+            _saveToStorage();
+            getData();
+          });
+        },
+        child: const Icon(Icons.add));
   }
 
   AppBar appBarApp() {
@@ -76,7 +109,7 @@ class _MainBodyAppState extends State<MainBodyApp>
       actions: const [Icon(Icons.notifications), SizedBox(width: 15)],
       title: baseTextField(
           onChanged: (value) {},
-          controller: null,
+          controller: searchController,
           isOutline: true,
           hintText: 'Search',
           icon: const Icon(Icons.search)),
@@ -86,7 +119,39 @@ class _MainBodyAppState extends State<MainBodyApp>
     );
   }
 
-  void handleAddEvent() {}
+  void getData() {
+    setState(() {
+      var items = storage.getItem('todos');
+
+      listItem = items == null
+          ? []
+          : List<ToDoModel>.from((items as List).map(
+              (item) => ToDoModel(
+                title: item['title'],
+                id: item['id'],
+                content: item['content'],
+                time: stringToDate(item['time']),
+                typeColor: item['typeColor'],
+              ),
+            ));
+    });
+  }
+
+  List<ToDoModel> filterList(List<ToDoModel> listItem, Tab tab) {
+    return listItem
+        .where((element) => element.title.contains(searchController.text))
+        .where((element) {
+      String date = formatDay(DateTime.now());
+      if (tab.text == 'Today') {
+        return date == formatDay(element.time);
+      }
+      if (tab.text == 'UpComing') {
+        return element.time.isAfter(DateTime.now());
+      }
+
+      return true;
+    }).toList();
+  }
 }
 
 const List<Tab> tabs = <Tab>[
@@ -94,9 +159,3 @@ const List<Tab> tabs = <Tab>[
   Tab(text: 'Today'),
   Tab(text: 'UpComing'),
 ];
-
-ToDoModel model = ToDoModel(
-    content: 'Vì quá ngu si',
-    time: '10:00 AM',
-    title: 'Người muốn kêu ai',
-    typeColor: 0);

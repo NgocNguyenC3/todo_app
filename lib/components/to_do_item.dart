@@ -1,4 +1,8 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:localstorage/localstorage.dart';
 
 import 'package:todo_app/components/base_text_field.dart';
 import 'package:todo_app/components/loading/loading_button.dart';
@@ -6,10 +10,13 @@ import 'package:todo_app/model/to_do.dart';
 
 class ToDoItem extends StatefulWidget {
   ToDoModel mainModel;
-
+  dynamic onSaveData;
+  dynamic onDeleteData;
   ToDoItem({
     Key? key,
     required this.mainModel,
+    required this.onSaveData,
+    this.onDeleteData,
   }) : super(key: key);
 
   @override
@@ -17,25 +24,19 @@ class ToDoItem extends StatefulWidget {
 }
 
 class _ToDoItemState extends State<ToDoItem> {
-  TextEditingController controller = TextEditingController();
-  TextEditingController titleController = TextEditingController();
-
   late ToDoModel model;
 
   @override
   void initState() {
     super.initState();
-
     model = widget.mainModel.cpy();
   }
 
   @override
   Widget build(BuildContext context) {
-    controller.text = model.content;
-    titleController.text = model.title;
     return InkWell(
       onTap: () {
-        hanldeClickItem(context);
+        hanldeClickItem(context, model, onSaveData: widget.onSaveData);
       },
       child: SizedBox(
         width: MediaQuery.of(context).size.width - 30,
@@ -57,118 +58,28 @@ class _ToDoItemState extends State<ToDoItem> {
                   model.title,
                   style: text14,
                 ),
+                const SizedBox(width: 10),
                 Text(
-                  'Time:${model.time}',
+                  'Time: ${formatDate(model.time)}',
                   style: text14.copyWith(
                       color: colorList[model.typeColor].withOpacity(0.5)),
-                ),
-                const SizedBox(
-                  height: 5,
                 ),
               ],
             ),
             const Spacer(),
-            const Icon(
-              Icons.delete,
-              color: Colors.red,
+            InkWell(
+              onTap: () {
+                widget.onDeleteData(widget.mainModel);
+              },
+              child: const Icon(
+                Icons.delete,
+                color: Colors.red,
+              ),
             )
           ],
         ),
       ),
     );
-  }
-
-  Future<dynamic> hanldeClickItem(BuildContext context) {
-    return showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return Dialog(
-            insetPadding: const EdgeInsets.all(10.0),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0)), //this right here
-            child: StatefulBuilder(
-              builder: (BuildContext context, StateSetter setState) => SizedBox(
-                height: 220,
-                child: Padding(
-                  padding: const EdgeInsets.all(10.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(
-                        height: 10,
-                      ),
-                      baseTextField(
-                          onChanged: (value) {},
-                          controller: titleController,
-                          maxLength: 50,
-                          horizontal: 0.0,
-                          textStyle: text18.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color:
-                                  colorList[model.typeColor].withOpacity(0.5)),
-                          vertical: 0.0),
-                      const SizedBox(
-                        height: 10,
-                      ),
-                      baseTextField(
-                          onChanged: (value) {},
-                          controller: controller,
-                          isOutline: true,
-                          maxLines: 3),
-                      const SizedBox(
-                        height: 10,
-                      ),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          boxContainer(
-                              child: Text(
-                                'Time: ${model.time}',
-                                style: text14.copyWith(
-                                    color: colorList[model.typeColor]
-                                        .withOpacity(0.5)),
-                              ),
-                              borderColor:
-                                  colorList[model.typeColor].withOpacity(0.5)),
-                          boxContainer(
-                              onTap: () {
-                                setState(() {
-                                  model.changedLevel();
-                                });
-                              },
-                              child: Text(
-                                'Level: ${level[model.typeColor]}',
-                                style: text14.copyWith(
-                                    color: colorList[model.typeColor]
-                                        .withOpacity(0.5)),
-                              ),
-                              borderColor:
-                                  colorList[model.typeColor].withOpacity(0.5)),
-                        ],
-                      ),
-                      const SizedBox(
-                        height: 10.0,
-                      ),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: SizedBox(
-                          width: 100,
-                          child: LoadingButtonWidget(
-                              height: 35,
-                              submit: () {},
-                              isLoading: false,
-                              label: 'Save'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        });
   }
 }
 
@@ -185,3 +96,152 @@ Widget boxContainer({required Widget child, color, borderColor, onTap}) {
     ),
   );
 }
+
+Future<dynamic> hanldeClickItem(BuildContext context, ToDoModel model,
+    {bool isSave = false, required onSaveData}) {
+  TextEditingController controller = TextEditingController();
+  TextEditingController titleController = TextEditingController();
+  controller.text = model.content;
+  titleController.text = model.title;
+
+  return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          insetPadding: const EdgeInsets.all(10.0),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10.0)), //this right here
+          child: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) => SizedBox(
+              height: 220,
+              child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(
+                      height: 10,
+                    ),
+                    baseTextField(
+                        onChanged: (value) {},
+                        controller: titleController,
+                        maxLength: 50,
+                        horizontal: 0.0,
+                        hintText: 'Title',
+                        textStyle: text18.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: colorList[model.typeColor].withOpacity(0.5)),
+                        vertical: 0.0),
+                    const SizedBox(
+                      height: 10,
+                    ),
+                    baseTextField(
+                        onChanged: (value) {},
+                        controller: controller,
+                        hintText: 'Content',
+                        isOutline: true,
+                        maxLines: 3),
+                    const SizedBox(
+                      height: 10,
+                    ),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        boxContainer(
+                            onTap: () {
+                              dateTimePicked(
+                                  context,
+                                  cupertinoDateTimePicker((value) {
+                                    setState(
+                                      () => model.time = value,
+                                    );
+                                  }, model.time));
+                            },
+                            child: Text(
+                              'Time: ${formatDate(model.time)}',
+                              style: text14.copyWith(
+                                  color: colorList[model.typeColor]
+                                      .withOpacity(0.5)),
+                            ),
+                            borderColor:
+                                colorList[model.typeColor].withOpacity(0.5)),
+                        boxContainer(
+                            onTap: () {
+                              setState(() {
+                                model.changedLevel();
+                              });
+                            },
+                            child: Text(
+                              'Level: ${level[model.typeColor]}',
+                              style: text14.copyWith(
+                                  color: colorList[model.typeColor]
+                                      .withOpacity(0.5)),
+                            ),
+                            borderColor:
+                                colorList[model.typeColor].withOpacity(0.5)),
+                      ],
+                    ),
+                    const SizedBox(
+                      height: 10.0,
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: SizedBox(
+                        width: 100,
+                        child: LoadingButtonWidget(
+                            height: 35,
+                            submit: () {
+                              model.title = titleController.text;
+                              model.content = controller.text;
+                              onSaveData(model);
+                              Navigator.of(context).pop();
+                            },
+                            isLoading: false,
+                            label: 'Save'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      });
+}
+
+dateTimePicked(BuildContext context, Widget child) async {
+  showCupertinoModalPopup<DateTime>(
+      context: context,
+      builder: (BuildContext context) => Container(
+            height: 216,
+            padding: const EdgeInsets.only(top: 6.0),
+            margin: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            color: CupertinoColors.systemBackground.resolveFrom(context),
+            child: SafeArea(
+              top: false,
+              child: child,
+            ),
+          ));
+}
+
+Widget cupertinoDateTimePicker(onchanged, initTime) {
+  return CupertinoDatePicker(
+    initialDateTime: initTime ?? DateTime.now(),
+    mode: CupertinoDatePickerMode.dateAndTime,
+    use24hFormat: true,
+    onDateTimeChanged: (DateTime newTime) {
+      onchanged(newTime);
+    },
+  );
+}
+
+String formatDate(time) =>
+    DateFormat('yyyy/MM/dd HH:mm').format(time).toString();
+
+String formatDay(time) => DateFormat('yyyy/MM/dd').format(time).toString();
+
+DateTime stringToDate(time) => DateFormat('yyyy/MM/dd HH:mm').parse(time);
