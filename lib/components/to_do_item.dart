@@ -2,8 +2,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:localstorage/localstorage.dart';
-
 import 'package:todo_app/components/base_text_field.dart';
 import 'package:todo_app/components/loading/loading_button.dart';
 import 'package:todo_app/model/to_do.dart';
@@ -24,19 +22,17 @@ class ToDoItem extends StatefulWidget {
 }
 
 class _ToDoItemState extends State<ToDoItem> {
-  late ToDoModel model;
-
   @override
   void initState() {
     super.initState();
-    model = widget.mainModel.cpy();
   }
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
-        hanldeClickItem(context, model, onSaveData: widget.onSaveData);
+        hanldeClickItem(context, widget.mainModel,
+            onSaveData: widget.onSaveData);
       },
       child: SizedBox(
         width: MediaQuery.of(context).size.width - 30,
@@ -48,21 +44,23 @@ class _ToDoItemState extends State<ToDoItem> {
               height: 20,
               decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: colorList[model.typeColor].withOpacity(0.5)),
+                  color:
+                      colorList[widget.mainModel.typeColor].withOpacity(0.5)),
             ),
             const SizedBox(width: 15),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  model.title,
+                  widget.mainModel.title,
                   style: text14,
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  'Time: ${formatDate(model.time)}',
+                  'Time: ${formatDate(widget.mainModel.time)}',
                   style: text14.copyWith(
-                      color: colorList[model.typeColor].withOpacity(0.5)),
+                      color: colorList[widget.mainModel.typeColor]
+                          .withOpacity(0.5)),
                 ),
               ],
             ),
@@ -97,12 +95,12 @@ Widget boxContainer({required Widget child, color, borderColor, onTap}) {
   );
 }
 
-Future<dynamic> hanldeClickItem(BuildContext context, ToDoModel model,
+Future<dynamic> hanldeClickItem(BuildContext context, ToDoModel _model,
     {bool isSave = false, required onSaveData}) {
   TextEditingController controller = TextEditingController();
   TextEditingController titleController = TextEditingController();
-  controller.text = model.content;
-  titleController.text = model.title;
+  controller.text = _model.content;
+  titleController.text = _model.title;
 
   return showDialog(
       context: context,
@@ -113,7 +111,7 @@ Future<dynamic> hanldeClickItem(BuildContext context, ToDoModel model,
               borderRadius: BorderRadius.circular(10.0)), //this right here
           child: StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) => SizedBox(
-              height: 220,
+              height: 250,
               child: Padding(
                 padding: const EdgeInsets.all(10.0),
                 child: Column(
@@ -129,9 +127,12 @@ Future<dynamic> hanldeClickItem(BuildContext context, ToDoModel model,
                         maxLength: 50,
                         horizontal: 0.0,
                         hintText: 'Title',
+                        validator: (value) =>
+                            (value == null || value.isEmpty) ? 'Empty' : null,
                         textStyle: text18.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: colorList[model.typeColor].withOpacity(0.5)),
+                            color:
+                                colorList[_model.typeColor].withOpacity(0.5)),
                         vertical: 0.0),
                     const SizedBox(
                       height: 10,
@@ -155,32 +156,32 @@ Future<dynamic> hanldeClickItem(BuildContext context, ToDoModel model,
                                   context,
                                   cupertinoDateTimePicker((value) {
                                     setState(
-                                      () => model.time = value,
+                                      () => _model.time = value,
                                     );
-                                  }, model.time));
+                                  }, _model.time));
                             },
                             child: Text(
-                              'Time: ${formatDate(model.time)}',
+                              'Time: ${formatDate(_model.time)}',
                               style: text14.copyWith(
-                                  color: colorList[model.typeColor]
+                                  color: colorList[_model.typeColor]
                                       .withOpacity(0.5)),
                             ),
                             borderColor:
-                                colorList[model.typeColor].withOpacity(0.5)),
+                                colorList[_model.typeColor].withOpacity(0.5)),
                         boxContainer(
                             onTap: () {
                               setState(() {
-                                model.changedLevel();
+                                _model.changedLevel();
                               });
                             },
                             child: Text(
-                              'Level: ${level[model.typeColor]}',
+                              'Level: ${level[_model.typeColor]}',
                               style: text14.copyWith(
-                                  color: colorList[model.typeColor]
+                                  color: colorList[_model.typeColor]
                                       .withOpacity(0.5)),
                             ),
                             borderColor:
-                                colorList[model.typeColor].withOpacity(0.5)),
+                                colorList[_model.typeColor].withOpacity(0.5)),
                       ],
                     ),
                     const SizedBox(
@@ -193,9 +194,14 @@ Future<dynamic> hanldeClickItem(BuildContext context, ToDoModel model,
                         child: LoadingButtonWidget(
                             height: 35,
                             submit: () {
-                              model.title = titleController.text;
-                              model.content = controller.text;
-                              onSaveData(model);
+                              if (titleController.text.isEmpty) {
+                                titleController.text = ' ';
+                                titleController.text = '';
+                                return;
+                              }
+                              _model.title = titleController.text;
+                              _model.content = controller.text;
+                              onSaveData(_model);
                               Navigator.of(context).pop();
                             },
                             isLoading: false,

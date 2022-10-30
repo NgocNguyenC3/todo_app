@@ -1,5 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:localstorage/localstorage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:todo_app/components/base_text_field.dart';
 import 'package:todo_app/components/to_do_item.dart';
@@ -18,18 +20,14 @@ class _MainBodyAppState extends State<MainBodyApp>
     with SingleTickerProviderStateMixin {
   late TabController tabControler;
   List<ToDoModel> listItem = [];
-  final LocalStorage storage = LocalStorage('todo_app');
   final TextEditingController searchController = TextEditingController();
+  late SharedPreferences prefs;
 
   @override
   void initState() {
     super.initState();
     tabControler = TabController(vsync: this, length: 3);
     getData();
-  }
-
-  _saveToStorage() {
-    storage.setItem('todos', ToDoModel.toJSONEncodableList(listItem));
   }
 
   @override
@@ -41,17 +39,36 @@ class _MainBodyAppState extends State<MainBodyApp>
         floatingActionButton: floatingButton(context),
         body: TabBarView(
           children: tabs.map((Tab tab) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(
-                  height: 10,
-                ),
-                ...tabPage(filterList(listItem, tab))
-              ],
+            return SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  ...tabPage(filterList(listItem, tab))
+                ],
+              ),
             );
           }).toList(),
         ),
+      ),
+    );
+  }
+
+  AppBar appBarApp() {
+    return AppBar(
+      actions: const [Icon(Icons.notifications), SizedBox(width: 15)],
+      title: baseTextField(
+          onChanged: (value) {
+            setState(() {});
+          },
+          controller: searchController,
+          isOutline: true,
+          hintText: 'Search',
+          icon: const Icon(Icons.search)),
+      bottom: const TabBar(
+        tabs: tabs,
       ),
     );
   }
@@ -64,6 +81,7 @@ class _MainBodyAppState extends State<MainBodyApp>
                     mainModel: e,
                     onDeleteData: (value) {
                       listItem.remove(value);
+                      setState(() {});
                       _saveToStorage();
                       getData();
                     },
@@ -104,39 +122,6 @@ class _MainBodyAppState extends State<MainBodyApp>
         child: const Icon(Icons.add));
   }
 
-  AppBar appBarApp() {
-    return AppBar(
-      actions: const [Icon(Icons.notifications), SizedBox(width: 15)],
-      title: baseTextField(
-          onChanged: (value) {},
-          controller: searchController,
-          isOutline: true,
-          hintText: 'Search',
-          icon: const Icon(Icons.search)),
-      bottom: const TabBar(
-        tabs: tabs,
-      ),
-    );
-  }
-
-  void getData() {
-    setState(() {
-      var items = storage.getItem('todos');
-
-      listItem = items == null
-          ? []
-          : List<ToDoModel>.from((items as List).map(
-              (item) => ToDoModel(
-                title: item['title'],
-                id: item['id'],
-                content: item['content'],
-                time: stringToDate(item['time']),
-                typeColor: item['typeColor'],
-              ),
-            ));
-    });
-  }
-
   List<ToDoModel> filterList(List<ToDoModel> listItem, Tab tab) {
     return listItem
         .where((element) => element.title.contains(searchController.text))
@@ -148,9 +133,30 @@ class _MainBodyAppState extends State<MainBodyApp>
       if (tab.text == 'UpComing') {
         return element.time.isAfter(DateTime.now());
       }
-
       return true;
     }).toList();
+  }
+
+  void _saveToStorage() {
+    prefs.setString(
+        'todos', jsonEncode(ToDoModel.toJSONEncodableList(listItem)));
+  }
+
+  void getData() async {
+    prefs = await SharedPreferences.getInstance();
+    setState(() {
+      var items = jsonDecode(prefs.getString('todos') ?? '');
+
+      listItem = List<ToDoModel>.from((items as List).asMap().entries.map(
+            (item) => ToDoModel(
+              title: item.value['title'],
+              id: item.key,
+              content: item.value['content'],
+              time: stringToDate(item.value['time']),
+              typeColor: item.value['typeColor'],
+            ),
+          ));
+    });
   }
 }
 

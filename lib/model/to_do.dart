@@ -25,15 +25,6 @@ class ToDoModel {
     typeColor++;
   }
 
-  ToDoModel cpy() {
-    return ToDoModel(
-        title: title,
-        content: content,
-        typeColor: typeColor,
-        time: time,
-        id: id);
-  }
-
   static toJSONEncodableList(List<ToDoModel> items) {
     return items.map((item) {
       return item.toJSONEncodable();
@@ -43,7 +34,6 @@ class ToDoModel {
   dynamic toJSONEncodable() {
     Map<String, dynamic> m = {};
 
-    m['id'] = id;
     m['title'] = title;
     m['content'] = content;
     m['typeColor'] = typeColor;
