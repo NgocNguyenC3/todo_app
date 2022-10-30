@@ -9,16 +9,21 @@ TextFormField baseTextField(
     bool readOnly = false,
     bool isObscure = false,
     bool isPhone = false,
+    bool isOutline = false,
     int? maxLength,
+    int? maxLines,
     Widget? icon,
     InputBorder? enabledBorder,
     InputBorder? focusedBorder,
     InputBorder? errorBorder,
     InputBorder? focusedErrorBorder,
-    bool isOutline = false,
+    TextStyle? textStyle,
+    double? horizontal,
+    double? vertical,
     FormFieldValidator<String>? validator}) {
   return TextFormField(
     onTap: onTap,
+    maxLines: maxLines,
     readOnly: readOnly,
     inputFormatters: [
       LengthLimitingTextInputFormatter(maxLength),
@@ -30,7 +35,8 @@ TextFormField baseTextField(
     validator: validator,
     textCapitalization: TextCapitalization.words,
     keyboardType: isPhone ? TextInputType.phone : TextInputType.text,
-    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
+    style:
+        textStyle ?? const TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
     //focusNode: focusNode,
     onChanged: onChanged,
     decoration: InputDecoration(
@@ -46,22 +52,22 @@ TextFormField baseTextField(
       focusedBorder: focusedBorder ??
           (isOutline
               ? outLineInputBorder(width: 1, color: greyBorderColor)
-              : underLineIntputBorder(width: 1, color: greyBorderColor)),
+              : InputBorder.none),
       enabledBorder: enabledBorder ??
           (isOutline
               ? outLineInputBorder(width: 1, color: greyBorderColor)
-              : underLineIntputBorder(width: 1, color: greyBorderColor)),
+              : InputBorder.none),
       errorBorder: errorBorder ??
           (isOutline
               ? outLineInputBorder(width: 1, color: Colors.red)
-              : underLineIntputBorder(width: 1, color: Colors.red)),
+              : InputBorder.none),
       focusedErrorBorder: focusedErrorBorder ??
           (isOutline
               ? outLineInputBorder(width: 1, color: Colors.red)
-              : underLineIntputBorder(width: 1, color: Colors.red)),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 15,
-        vertical: 15,
+              : InputBorder.none),
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: horizontal ?? 15,
+        vertical: vertical ?? 15,
       ),
       isDense: true,
     ),
