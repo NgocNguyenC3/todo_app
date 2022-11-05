@@ -29,6 +29,7 @@ class _ToDoItemState extends State<ToDoItem> {
 
   @override
   Widget build(BuildContext context) {
+    print(widget.mainModel.time.isBefore(DateTime.now()));
     return InkWell(
       onTap: () {
         hanldeClickItem(context, widget.mainModel,
@@ -39,14 +40,23 @@ class _ToDoItemState extends State<ToDoItem> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color:
-                      colorList[widget.mainModel.typeColor].withOpacity(0.5)),
-            ),
+            widget.mainModel.time.isAfter(DateTime.now())
+                ? Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: colorList[widget.mainModel.typeColor]
+                            .withOpacity(0.5)),
+                  )
+                : const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: Icon(
+                      Icons.close,
+                      color: Colors.red,
+                    ),
+                  ),
             const SizedBox(width: 15),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,

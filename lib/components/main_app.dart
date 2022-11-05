@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:todo_app/components/base_text_field.dart';
 import 'package:todo_app/components/to_do_item.dart';
 import 'package:todo_app/model/to_do.dart';
+import 'package:todo_app/services/notification.dart';
 
 class MainBodyApp extends StatefulWidget {
   const MainBodyApp({
@@ -21,12 +22,16 @@ class _MainBodyAppState extends State<MainBodyApp>
   late TabController tabControler;
   List<ToDoModel> listItem = [];
   final TextEditingController searchController = TextEditingController();
+
   late SharedPreferences prefs;
+  late final LocalNotificationService service;
 
   @override
   void initState() {
     super.initState();
     tabControler = TabController(vsync: this, length: 3);
+    service = LocalNotificationService();
+    service.intialize();
     getData();
   }
 
@@ -58,7 +63,6 @@ class _MainBodyAppState extends State<MainBodyApp>
 
   AppBar appBarApp() {
     return AppBar(
-      actions: const [Icon(Icons.notifications), SizedBox(width: 15)],
       title: baseTextField(
           onChanged: (value) {
             setState(() {});
@@ -108,11 +112,12 @@ class _MainBodyAppState extends State<MainBodyApp>
           hanldeClickItem(
               context,
               ToDoModel(
-                  id: listItem.length,
-                  title: '',
-                  content: '',
-                  typeColor: 1,
-                  time: DateTime.now()),
+                id: listItem.length,
+                title: '',
+                content: '',
+                typeColor: 1,
+                time: DateTime.now(),
+              ),
               isSave: true, onSaveData: (data) {
             listItem.add(data);
             _saveToStorage();
@@ -124,7 +129,9 @@ class _MainBodyAppState extends State<MainBodyApp>
 
   List<ToDoModel> filterList(List<ToDoModel> listItem, Tab tab) {
     return listItem
-        .where((element) => element.title.contains(searchController.text))
+        .where((element) => element.title
+            .toLowerCase()
+            .contains(searchController.text.toLowerCase()))
         .where((element) {
       String date = formatDay(DateTime.now());
       if (tab.text == 'Today') {
@@ -145,18 +152,32 @@ class _MainBodyAppState extends State<MainBodyApp>
   void getData() async {
     prefs = await SharedPreferences.getInstance();
     setState(() {
-      var items = jsonDecode(prefs.getString('todos') ?? '');
+      var items = prefs.getString('todos') != null
+          ? jsonDecode(prefs.getString('todos')!)
+          : null;
 
-      listItem = List<ToDoModel>.from((items as List).asMap().entries.map(
-            (item) => ToDoModel(
-              title: item.value['title'],
-              id: item.key,
-              content: item.value['content'],
-              time: stringToDate(item.value['time']),
-              typeColor: item.value['typeColor'],
-            ),
-          ));
+      listItem = items != null
+          ? List<ToDoModel>.from((items as List).asMap().entries.map(
+                (item) => ToDoModel(
+                  title: item.value['title'],
+                  id: item.key,
+                  content: item.value['content'],
+                  time: stringToDate(item.value['time']),
+                  typeColor: item.value['typeColor'],
+                ),
+              ))
+          : [];
+      listItem.sort(((a, b) => a.time.isAfter(b.time) ? 0 : 1));
     });
+
+    notificationData();
+  }
+
+  void notificationData() {
+    for (var i in listItem) {
+      service.showScheduledNotification(
+          id: i.id, title: i.title, body: i.content, time: i.time);
+    }
   }
 }
 

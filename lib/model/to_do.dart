@@ -51,5 +51,5 @@ final colorList = [
 final level = [
   'Importance',
   'Medium',
-  'Easy',
+  'Not important',
 ];
