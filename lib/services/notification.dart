@@ -3,7 +3,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 
 // ignore: constant_identifier_names
-const NOTIFYTIME = 1;
+const NOTIFYTIME = 10 * 60;
 
 class LocalNotificationService {
   LocalNotificationService();
